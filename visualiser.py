@@ -9,19 +9,14 @@ import traceback
 DATA_DIR = "data"
 grid = np.array([])
 loaded_steps = 0
+variable_max = 1
 
-cmap = ListedColormap([
-    "white",     # 0
-    "green",     # 1
-    "red",       # 2
-    "darkred",   # 3
-])
 
-norm = BoundaryNorm(
-    boundaries = np.arange(cmap.N + 1) - 0.5, # dynamically generated boundaries
-    ncolors=cmap.N,
-    clip=True
-)
+#norm = BoundaryNorm(
+#    boundaries = np.arange(cmap.N + 1) - 0.5, # dynamically generated boundaries
+#    ncolors=cmap.N,
+#    clip=True
+#)
 
 def unpack(v):
     # Function is required to convert agent variable steps from array to scalars due to bug in RC3
@@ -29,10 +24,13 @@ def unpack(v):
     return v[0] if isinstance(v, list) else v
 
 
-def load_data(step_count, agent_name='agent', agent_variable='status'):
+def load_data(step_count, agent_name='agent', agent_variable='status', agent_variable_max=1):
     """Function loads FLAME GPU simulation output data (in json format) and stores it in the global grid array"""
     global grid
     global loaded_steps
+    global variable_max
+
+    variable_max = agent_variable_max
     try:
         for i in range(step_count+1):
             file_path = f"{DATA_DIR}/{i}.json"
@@ -76,7 +74,8 @@ def plot_step(step):
 
     # Plotting
     plt.figure(figsize=(8, 6))
-    im = plt.imshow(grid[:,:,step].T, origin='lower', cmap=cmap, norm=norm)
+    cmap = plt.get_cmap('viridis')
+    im = plt.imshow(grid[:,:,step].T, origin='lower', cmap=cmap, vmax=variable_max)
 
     #plot
     plt.title(f"")
@@ -96,12 +95,13 @@ def animate_steps(step_count):
     #    load_data(step_count)
 
     fig, ax = plt.subplots()
+    cmap = plt.get_cmap('viridis')
 
     ims = [] # ims is a list of lists, each row is a list of artists to draw in the
     for i in range(step_count):
-        im = ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, norm=norm, origin='lower')
+        im = ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, vmax=variable_max, origin='lower')
         if i == 0:
-            ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, norm=norm, origin='lower')  # show an initial one first
+            ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, vmax=variable_max, origin='lower')  # show an initial one first
         ims.append([im])
 
     ani = animation.ArtistAnimation(fig, ims, interval=100, blit=True, repeat_delay=1000)
@@ -126,7 +126,8 @@ def display_steps(step_count):
     #    load_data(step_count)
 
     fig, ax = plt.subplots()
-    im = ax.imshow(grid[:,:,0].T, cmap=cmap, norm=norm, origin='lower')
+    cmap = plt.get_cmap('viridis')
+    im = ax.imshow(grid[:,:,0].T, cmap=cmap, vmax=variable_max, origin='lower')
     ax_depth = plt.axes([0.23, 0.02, 0.56, 0.04])
     slider = Slider(ax_depth, 'step', 0, grid.shape[2]-1, valinit=0)
     update_slider = lambda v: im.set_data(grid[:, :, int(round(v))].T)
